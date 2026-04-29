@@ -288,7 +288,7 @@ def view_banda(session_id: str) -> None:
     st.markdown('<div class="yv-card"><div class="yv-h2">Setlist e ritmo do jantar</div></div>', unsafe_allow_html=True)
     for _, r in df.iterrows():
         cls = "yv-card yv-now" if int(r["ordem"]) == ordem else "yv-card"
-        st.markdown(f"""<div class="{cls}"><span class="yv-pill">{safe(r, 'hora_inicio')} · {safe(r, 'hora_fim')}</span><span class="yv-pill">{safe(r, 'etapa')}</span><span class="yv-pill">{safe(r, 'modo_musica', 'banda')}</span><h3 style="color:{BRAND_BLUE}; margin:14px 0 4px;">{safe(r, 'musica', 'Música ao vivo')}</h3><div class="yv-muted">{safe(r, 'artista')} · {safe(r, 'duracao_musica')}</div>{progress_html(r, light=True) if int(r['ordem']) == ordem else ''}<p>{safe(r, 'observacao_banda')}</p>{playback_block(r)}</div>""", unsafe_allow_html=True)
+        st.markdown(f"""<div class="{cls}"><span class="yv-pill">{safe(r, 'hora_inicio')} · {safe(r, 'hora_fim')}</span><span class="yv-pill">{safe(r, 'etapa')}</span><span class="yv-pill">{safe(r, 'modo_musica', 'banda')}</span><h3 style="color:{BRAND_BLUE}; margin:14px 0 4px;">{safe(r, 'musica', 'Música ao vivo')}</h3><div class="yv-muted">{safe(r, 'artista')} · {safe(r, 'duracao_musica')}</div><p>{safe(r, 'observacao_banda')}</p>{playback_block(r)}</div>""", unsafe_allow_html=True)
 
 
 def view_cozinha(session_id: str) -> None:
@@ -299,7 +299,7 @@ def view_cozinha(session_id: str) -> None:
         internal_unavailable(session_id)
         return
     nxt = df[df["ordem"] > ordem].head(1)
-    st.markdown(f"""<div class="yv-card-dark"><div class="yv-kicker">Cozinha · agora</div><div class="yv-h1">{safe(row, 'prato')}</div><div class="yv-story">{safe(row, 'qtd_convidados')} convidados · status: <b>{safe(row, 'status_cozinha')}</b></div>{progress_html(row)}<br><div class="yv-white-muted">{safe(row, 'observacao_cozinha')}</div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="yv-card-dark"><div class="yv-kicker">Cozinha · agora</div><div class="yv-h1">{safe(row, 'prato')}</div><div class="yv-story">{safe(row, 'qtd_convidados')} convidados · status: <b>{safe(row, 'status_cozinha')}</b></div><br><div class="yv-white-muted">{safe(row, 'observacao_cozinha')}</div></div>""", unsafe_allow_html=True)
     if not nxt.empty:
         p = nxt.iloc[0].to_dict()
         st.markdown(f"""<div class="yv-card"><div class="yv-kicker">Próximo prato</div><div class="yv-h2">{safe(p, 'prato')}</div><div class="yv-muted">{safe(p, 'hora_inicio')} · {safe(p, 'status_cozinha')}</div><p>{safe(p, 'observacao_cozinha')}</p></div>""", unsafe_allow_html=True)
@@ -314,7 +314,7 @@ def view_operacao(session_id: str) -> None:
         return
     min_ordem = int(df["ordem"].min())
     max_ordem = int(df["ordem"].max())
-    st.markdown(f"""<div class="yv-card-dark"><div class="yv-kicker">Controle operacional</div><div class="yv-h1">{safe(row, 'etapa')}</div><div class="yv-story">Atual: {safe(row, 'prato')} · {safe(row, 'musica')}</div>{progress_html(row)}{playback_block(row)}</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="yv-card-dark"><div class="yv-kicker">Controle operacional</div><div class="yv-h1">{safe(row, 'etapa')}</div><div class="yv-story">Etapa ativa {ordem} de {max_ordem}: {safe(row, 'prato')} · {safe(row, 'musica')}</div>{playback_block(row)}</div>""", unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns(4)
     if c1.button("Voltar", use_container_width=True):
         update_live(session_id, max(min_ordem, ordem - 1))
