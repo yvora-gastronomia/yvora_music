@@ -278,6 +278,40 @@ def internal_unavailable(session_id: str) -> None:
         st.write("Sessões encontradas:", ", ".join(available))
 
 
+
+
+def view_session_landing() -> None:
+    sessions = get_sessions()
+    logo_path = find_logo_path()
+
+    col1, col2 = st.columns([1, 8])
+    with col1:
+        if logo_path:
+            st.image(logo_path, width=80)
+    with col2:
+        st.markdown('<h1 class="yv-title">YVORA Music</h1>', unsafe_allow_html=True)
+        st.markdown('<div class="yv-subtitle">Escolha sua experiência</div>', unsafe_allow_html=True)
+
+    if sessions.empty or "session_id" not in sessions.columns:
+        st.warning("Nenhuma sessão disponível")
+        return
+
+    for _, row in sessions.iterrows():
+        sid = str(row.get("session_id", ""))
+        nome = str(row.get("nome", sid))
+        descricao = str(row.get("descricao", "Experiência YVORA"))
+
+        st.markdown(f"""
+        <div class="yv-card">
+            <div class="yv-h2">{nome}</div>
+            <div class="yv-muted">{descricao}</div>
+            <br>
+            <a href="?view=cliente&sid={sid}">
+                <button style="background:#0E2A47;color:white;padding:10px 20px;border-radius:20px;border:none;">Iniciar experiência</button>
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
+
 def view_cliente(session_id: str) -> None:
     df = get_timeline(session_id)
     ordem = get_live(session_id)
@@ -408,7 +442,7 @@ def view_operacao(session_id: str) -> None:
 
 def get_active_view_and_session() -> Tuple[str, str]:
     params = st.query_params
-    requested_view = str(params.get("view", "cliente")).lower().strip()
+    requested_view = str(params.get("view", "")).lower().strip()
     requested_sid = str(params.get("sid", "")).strip()
     requested_admin = str(params.get("admin", "0")).strip().lower() in ["1", "true", "sim", "yes"]
 
@@ -445,7 +479,12 @@ admin_for_css = str(params_for_css.get("admin", "0")).strip().lower() in ["1", "
 hide_sidebar_for_css = initial_view_for_css == "cliente" and not admin_for_css
 inject_css(hide_sidebar=hide_sidebar_for_css)
 view, sid = get_active_view_and_session()
-render_header(view, sid)
+
+if not view:
+    view_session_landing()
+else:
+    render_header(view, sid)
+
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
 views[view](sid)
 
