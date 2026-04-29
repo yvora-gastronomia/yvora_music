@@ -18,6 +18,7 @@ BRAND_TEXT = "#47372E"
 AUTO_REFRESH_SECONDS = 5
 LOGO_PATHS = ["assets/logo.png", "assets/yvora_logo.png", "yvora_logo.JPG", "yvora_logo.jpg", "yvora_logo.png"]
 VIEW_OPTIONS = ["cliente", "banda", "cozinha", "operacao"]
+INTERNAL_VIEWS = ["banda", "cozinha", "operacao"]
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
 
@@ -68,9 +69,11 @@ def progress_for_row(row: Dict[str, Any]) -> Tuple[int, str, str]:
     return pct, label, detail
 
 
-def inject_css() -> None:
+def inject_css(hide_sidebar: bool = False) -> None:
+    sidebar_css = "[data-testid='stSidebar'] {display:none !important;} [data-testid='collapsedControl'] {display:none !important;}" if hide_sidebar else ""
     st.markdown(f"""
         <style>
+        {sidebar_css}
         html, body, [data-testid="stAppViewContainer"] {{ background: radial-gradient(circle at 12% 8%, rgba(198,169,106,0.20), transparent 30%), radial-gradient(circle at 92% 18%, rgba(14,42,71,0.10), transparent 34%), linear-gradient(135deg, {BRAND_BG_SOFT} 0%, {BRAND_BG} 100%) !important; color: {BRAND_TEXT}; }}
         [data-testid="stHeader"] {{ display:none !important; }}
         .block-container {{ padding-top: 1.2rem; max-width: 1240px; }}
@@ -328,30 +331,40 @@ def get_active_view_and_session() -> Tuple[str, str]:
     params = st.query_params
     requested_view = str(params.get("view", "cliente")).lower().strip()
     requested_sid = str(params.get("sid", "")).strip()
+    requested_admin = str(params.get("admin", "0")).strip().lower() in ["1", "true", "sim", "yes"]
+
     sessions_df = get_sessions()
     available_sessions = [] if sessions_df.empty or "session_id" not in sessions_df.columns else sessions_df["session_id"].astype(str).str.strip().tolist()
     sid = requested_sid or (available_sessions[0] if available_sessions else "jantar-teste")
     view = requested_view if requested_view in VIEW_OPTIONS else "cliente"
 
-    with st.sidebar:
-        st.markdown("### Visões YVORA")
-        selected_view = st.radio("Escolha a visão", VIEW_OPTIONS, index=VIEW_OPTIONS.index(view), key="selected_view", horizontal=False)
-        if available_sessions:
-            selected_sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(sid) if sid in available_sessions else 0, key="selected_sid")
-        else:
-            selected_sid = st.text_input("Sessão", value=sid, key="selected_sid_text")
-        st.caption("Use Cliente para QR público. Use Banda, Cozinha e Operação para controle interno.")
-        if selected_view != view or selected_sid != sid:
-            st.query_params["view"] = selected_view
-            st.query_params["sid"] = selected_sid
-            st.rerun()
-        view = selected_view
-        sid = selected_sid
+    show_sidebar = requested_admin or view in INTERNAL_VIEWS
+    if show_sidebar:
+        with st.sidebar:
+            st.markdown("### Visões YVORA")
+            selected_view = st.radio("Escolha a visão", VIEW_OPTIONS, index=VIEW_OPTIONS.index(view), key="selected_view", horizontal=False)
+            if available_sessions:
+                selected_sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(sid) if sid in available_sessions else 0, key="selected_sid")
+            else:
+                selected_sid = st.text_input("Sessão", value=sid, key="selected_sid_text")
+            st.caption("Use Cliente para QR público. Use Banda, Cozinha e Operação para controle interno.")
+            if selected_view != view or selected_sid != sid:
+                st.query_params["view"] = selected_view
+                st.query_params["sid"] = selected_sid
+                if requested_admin:
+                    st.query_params["admin"] = "1"
+                st.rerun()
+            view = selected_view
+            sid = selected_sid
 
     return view, sid
 
 
-inject_css()
+params_for_css = st.query_params
+initial_view_for_css = str(params_for_css.get("view", "cliente")).lower().strip()
+admin_for_css = str(params_for_css.get("admin", "0")).strip().lower() in ["1", "true", "sim", "yes"]
+hide_sidebar_for_css = initial_view_for_css == "cliente" and not admin_for_css
+inject_css(hide_sidebar=hide_sidebar_for_css)
 view, sid = get_active_view_and_session()
 render_header(view, sid)
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
