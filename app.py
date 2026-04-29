@@ -72,7 +72,7 @@ def inject_css() -> None:
     st.markdown(f"""
         <style>
         html, body, [data-testid="stAppViewContainer"] {{ background: radial-gradient(circle at 12% 8%, rgba(198,169,106,0.20), transparent 30%), radial-gradient(circle at 92% 18%, rgba(14,42,71,0.10), transparent 34%), linear-gradient(135deg, {BRAND_BG_SOFT} 0%, {BRAND_BG} 100%) !important; color: {BRAND_TEXT}; }}
-        [data-testid="stHeader"] {{ background: transparent !important; }}
+        [data-testid="stHeader"] {{ display:none !important; }}
         .block-container {{ padding-top: 1.2rem; max-width: 1240px; }}
         .yv-logo-mark {{ width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{BRAND_BLUE}; color:{BRAND_BG_SOFT}; font-family:Georgia, serif; font-size:22px; letter-spacing:1px; }}
         .yv-title {{ margin:0; color:{BRAND_BLUE}; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(24px, 4vw, 42px); line-height:1.0; letter-spacing:.3px; }}
@@ -119,7 +119,10 @@ def progress_html(row: Dict[str, Any], light: bool = False) -> str:
 
 def render_header(view: str, session_id: str) -> None:
     logo_path = find_logo_path()
-    left = st.columns([1, 10, 3])
+    if view == "cliente":
+        left = st.columns([1, 10])
+    else:
+        left = st.columns([1, 10, 3])
     with left[0]:
         if logo_path:
             st.image(logo_path, width=82)
@@ -127,8 +130,9 @@ def render_header(view: str, session_id: str) -> None:
             st.markdown('<div class="yv-logo-mark">Y</div>', unsafe_allow_html=True)
     with left[1]:
         st.markdown(f'<h1 class="yv-title">YVORA Music</h1><div class="yv-subtitle">Uma coreografia entre cozinha, salão, música e narrativa.</div>', unsafe_allow_html=True)
-    with left[2]:
-        st.markdown(f'<span class="yv-pill">{view.upper()}</span><span class="yv-pill">{session_id}</span>', unsafe_allow_html=True)
+    if view != "cliente":
+        with left[2]:
+            st.markdown(f'<span class="yv-pill">{view.upper()}</span><span class="yv-pill">{session_id}</span>', unsafe_allow_html=True)
 
 
 @st.cache_resource(ttl=300)
