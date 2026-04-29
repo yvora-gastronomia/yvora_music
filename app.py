@@ -68,22 +68,14 @@ def progress_for_row(row: Dict[str, Any]) -> Tuple[int, str, str]:
 
 
 def inject_css() -> None:
-    st.markdown(
-        f"""
+    st.markdown(f"""
         <style>
-        html, body, [data-testid="stAppViewContainer"] {{
-            background:
-                radial-gradient(circle at 12% 8%, rgba(198,169,106,0.20), transparent 30%),
-                radial-gradient(circle at 92% 18%, rgba(14,42,71,0.10), transparent 34%),
-                linear-gradient(135deg, {BRAND_BG_SOFT} 0%, {BRAND_BG} 100%) !important;
-            color: {BRAND_TEXT};
-        }}
+        html, body, [data-testid="stAppViewContainer"] {{ background: radial-gradient(circle at 12% 8%, rgba(198,169,106,0.20), transparent 30%), radial-gradient(circle at 92% 18%, rgba(14,42,71,0.10), transparent 34%), linear-gradient(135deg, {BRAND_BG_SOFT} 0%, {BRAND_BG} 100%) !important; color: {BRAND_TEXT}; }}
         [data-testid="stHeader"] {{ background: transparent !important; }}
         .block-container {{ padding-top: 1.2rem; max-width: 1240px; }}
         .yv-shell {{ animation: fadeIn .65s cubic-bezier(.2,.8,.2,1); }}
         .yv-header {{ display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; padding:14px 18px; border:1px solid rgba(14,42,71,0.12); border-radius:28px; background:rgba(255,255,255,0.46); backdrop-filter:blur(12px); box-shadow:0 18px 45px rgba(14,42,71,0.07); }}
         .yv-brand {{ display:flex; align-items:center; gap:14px; }}
-        .yv-logo-img {{ width:72px; max-height:72px; object-fit:contain; border-radius:18px; }}
         .yv-logo-mark {{ width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{BRAND_BLUE}; color:{BRAND_BG_SOFT}; font-family:Georgia, serif; font-size:22px; letter-spacing:1px; }}
         .yv-title {{ margin:0; color:{BRAND_BLUE}; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(24px, 4vw, 42px); line-height:1.0; letter-spacing:.3px; }}
         .yv-subtitle {{ margin-top:6px; color:rgba(14,42,71,.68); font-size:14px; }}
@@ -107,63 +99,38 @@ def inject_css() -> None:
         .yv-mini {{ background:rgba(255,255,255,.58); border:1px solid rgba(14,42,71,.1); border-radius:22px; padding:18px; box-shadow:0 12px 28px rgba(14,42,71,.05); }}
         .yv-mini b {{ color:{BRAND_BLUE}; }}
         .yv-now {{ border-left:5px solid {BRAND_GOLD}; }}
-        .yv-img img {{ border-radius:28px; box-shadow:0 20px 55px rgba(14,42,71,.14); }}
         .yv-progress-wrap {{ margin:22px 0 8px; }}
         .yv-progress-meta {{ display:flex; justify-content:space-between; gap:10px; color:rgba(250,246,239,.82); font-size:13px; margin-bottom:8px; }}
         .yv-progress-bg {{ width:100%; height:13px; border-radius:999px; background:rgba(250,246,239,.16); overflow:hidden; border:1px solid rgba(250,246,239,.16); }}
         .yv-progress-fill {{ height:100%; border-radius:999px; background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 18px rgba(198,169,106,.45); transition:width .7s ease; }}
-        .yv-progress-light .yv-progress-meta {{ color:rgba(71,55,46,.7); }}
-        .yv-progress-light .yv-progress-bg {{ background:rgba(14,42,71,.08); border-color:rgba(14,42,71,.08); }}
+        .yv-progress-light .yv-progress-meta {{ color:rgba(71,55,46,.7); }} .yv-progress-light .yv-progress-bg {{ background:rgba(14,42,71,.08); border-color:rgba(14,42,71,.08); }}
         .yv-play-card {{ background:rgba(255,255,255,.52); border:1px solid rgba(14,42,71,.1); border-radius:22px; padding:16px; margin-top:12px; }}
-        .yv-chapter-strip {{ display:flex; gap:8px; margin:18px 0; overflow:auto; padding-bottom:4px; }}
-        .yv-dot {{ min-width:56px; height:6px; border-radius:999px; background:rgba(14,42,71,.16); }}
-        .yv-dot-on {{ background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 12px rgba(198,169,106,.45); }}
+        .yv-chapter-strip {{ display:flex; gap:8px; margin:18px 0; overflow:auto; padding-bottom:4px; }} .yv-dot {{ min-width:56px; height:6px; border-radius:999px; background:rgba(14,42,71,.16); }} .yv-dot-on {{ background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 12px rgba(198,169,106,.45); }}
         .stButton > button {{ border-radius:999px !important; background:{BRAND_BLUE} !important; color:{BRAND_BG_SOFT} !important; border:1px solid rgba(14,42,71,.2) !important; min-height:2.7rem !important; font-weight:700 !important; }}
-        .stButton > button:hover {{ filter:brightness(1.08); }}
-        @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }}
-        @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }}
-        @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }}
-        @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
+        @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }} @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }} @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }} @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
         @media(max-width:760px) {{ .yv-header {{ align-items:flex-start; flex-direction:column; }} .yv-grid {{ grid-template-columns:1fr; }} .yv-cinema {{ min-height:620px; }} .yv-cinema:before {{ background:linear-gradient(180deg, rgba(6,22,38,.94), rgba(6,22,38,.72)); }} }}
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
+        """, unsafe_allow_html=True)
 
 
 def progress_html(row: Dict[str, Any], light: bool = False) -> str:
     pct, label, detail = progress_for_row(row)
     extra = " yv-progress-light" if light else ""
-    return f"""
-    <div class="yv-progress-wrap{extra}">
-        <div class="yv-progress-meta"><span>{label}</span><span>{pct}% · {detail}</span></div>
-        <div class="yv-progress-bg"><div class="yv-progress-fill" style="width:{pct}%;"></div></div>
-    </div>
-    """
+    return f'<div class="yv-progress-wrap{extra}"><div class="yv-progress-meta"><span>{label}</span><span>{pct}% · {detail}</span></div><div class="yv-progress-bg"><div class="yv-progress-fill" style="width:{pct}%;"></div></div></div>'
 
 
 def render_header(view: str, session_id: str) -> None:
     logo_path = find_logo_path()
-    logo_html = f'<img class="yv-logo-img" src="{logo_path}" />' if logo_path else '<div class="yv-logo-mark">Y</div>'
-    st.markdown('<div class="yv-shell">', unsafe_allow_html=True)
-    st.markdown(
-        f"""
-        <div class="yv-header">
-            <div class="yv-brand">
-                {logo_html}
-                <div>
-                    <h1 class="yv-title">YVORA Music</h1>
-                    <div class="yv-subtitle">Uma coreografia entre cozinha, salão, música e narrativa.</div>
-                </div>
-            </div>
-            <div>
-                <span class="yv-pill">{view.upper()}</span>
-                <span class="yv-pill">{session_id}</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    left = st.columns([1, 10, 3])
+    with left[0]:
+        if logo_path:
+            st.image(logo_path, width=82)
+        else:
+            st.markdown('<div class="yv-logo-mark">Y</div>', unsafe_allow_html=True)
+    with left[1]:
+        st.markdown(f'<h1 class="yv-title">YVORA Music</h1><div class="yv-subtitle">Uma coreografia entre cozinha, salão, música e narrativa.</div>', unsafe_allow_html=True)
+    with left[2]:
+        st.markdown(f'<span class="yv-pill">{view.upper()}</span><span class="yv-pill">{session_id}</span>', unsafe_allow_html=True)
 
 
 @st.cache_resource(ttl=300)
@@ -195,11 +162,19 @@ def read_df(tab: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def get_sessions() -> pd.DataFrame:
+    df = read_df("sessions")
+    return df if not df.empty else pd.DataFrame()
+
+
 def get_timeline(session_id: str) -> pd.DataFrame:
     df = read_df("timeline")
     if df.empty or "session_id" not in df.columns:
         return pd.DataFrame()
-    df = df[df["session_id"].astype(str) == str(session_id)].copy()
+    df["session_id"] = df["session_id"].astype(str).str.strip()
+    df = df[df["session_id"] == str(session_id).strip()].copy()
+    if "ativo" in df.columns:
+        df = df[df["ativo"].astype(str).str.strip().isin(["1", "", "True", "true"])]
     if df.empty:
         return df
     df["ordem"] = pd.to_numeric(df.get("ordem", 0), errors="coerce").fillna(0).astype(int)
@@ -210,7 +185,7 @@ def get_live(session_id: str) -> int:
     df = read_df("live")
     if df.empty or "session_id" not in df.columns:
         return 1
-    row = df[df["session_id"].astype(str) == str(session_id)]
+    row = df[df["session_id"].astype(str).str.strip() == str(session_id).strip()]
     if row.empty:
         return 1
     return int(pd.to_numeric(row.iloc[0].get("ordem_atual", 1), errors="coerce") or 1)
@@ -226,7 +201,7 @@ def update_live(session_id: str, new_ordem: int) -> None:
     idx_session = header.index("session_id") if "session_id" in header else 0
     found_row = None
     for i, row in enumerate(values[1:], start=2):
-        if len(row) > idx_session and str(row[idx_session]) == str(session_id):
+        if len(row) > idx_session and str(row[idx_session]).strip() == str(session_id).strip():
             found_row = i
             break
     out = [session_id, int(new_ordem), datetime.now().isoformat(timespec="seconds")]
@@ -255,7 +230,7 @@ def current_row(df: pd.DataFrame, ordem: int) -> Optional[Dict[str, Any]]:
 
 
 def media_url(row: Dict[str, Any]) -> str:
-    return safe(row, "imagem_prato") or safe(row, "gif_momento")
+    return safe(row, "background_url") or safe(row, "imagem_prato") or safe(row, "gif_momento")
 
 
 def chapter_strip(df: pd.DataFrame, ordem: int) -> str:
@@ -266,30 +241,21 @@ def chapter_strip(df: pd.DataFrame, ordem: int) -> str:
     return '<div class="yv-chapter-strip">' + ''.join(dots) + '</div>'
 
 
-def media_block(row: Dict[str, Any]) -> None:
-    img = safe(row, "imagem_prato")
-    gif = safe(row, "gif_momento")
-    if img:
-        st.markdown('<div class="yv-img yv-reveal yv-delay-2">', unsafe_allow_html=True)
-        st.image(img, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    if gif:
-        st.markdown('<div class="yv-img yv-reveal yv-delay-3">', unsafe_allow_html=True)
-        st.image(gif, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-
 def playback_block(row: Dict[str, Any]) -> str:
     modo = safe(row, "modo_musica", "banda") or "banda"
     spotify = safe(row, "spotify_url")
     label = "Banda ao vivo" if modo.lower() != "spotify" else "Playlist Spotify"
     link = f'<br><a href="{spotify}" target="_blank">Abrir playlist ou faixa</a>' if spotify else ""
-    return f"""
-    <div class="yv-play-card">
-        <b>Modo musical:</b> {label}<br>
-        <span class="yv-muted">Use modo_musica como banda ou spotify. Para Spotify, preencha spotify_url.</span>{link}
-    </div>
-    """
+    return f'<div class="yv-play-card"><b>Modo musical:</b> {label}<br><span class="yv-muted">Use modo_musica como banda ou spotify. Para Spotify, preencha spotify_url.</span>{link}</div>'
+
+
+def missing_timeline_help(session_id: str) -> None:
+    sessions = get_sessions()
+    available = [] if sessions.empty or "session_id" not in sessions.columns else sessions["session_id"].astype(str).tolist()
+    st.warning(f"Timeline não encontrada para a sessão: {session_id}")
+    st.info("Use a barra lateral para escolher uma sessão existente ou confirme se a aba timeline tem linhas com o mesmo session_id.")
+    if available:
+        st.write("Sessões encontradas:", ", ".join(available))
 
 
 def view_cliente(session_id: str) -> None:
@@ -297,47 +263,19 @@ def view_cliente(session_id: str) -> None:
     ordem = get_live(session_id)
     row = current_row(df, ordem)
     if not row:
-        st.warning("Timeline não encontrada para esta sessão.")
+        missing_timeline_help(session_id)
         return
     bg = media_url(row)
     bg_style = f"background-image:url('{bg}');" if bg else "background-image:radial-gradient(circle at 70% 30%, rgba(198,169,106,.26), transparent 36%);"
-    st.markdown(
-        f"""
-        <section class="yv-cinema">
-            <div class="yv-cinema-bg" style="{bg_style}"></div>
-            <div class="yv-orb"></div>
-            <div class="yv-cinema-content">
-                <div class="yv-kicker yv-reveal">Capítulo {safe(row, 'ordem')} · {safe(row, 'etapa')}</div>
-                <div class="yv-h1 yv-reveal yv-delay-1">{safe(row, 'prato', 'Momento YVORA')}</div>
-                <div class="yv-white-muted yv-reveal yv-delay-1">{safe(row, 'hora_inicio')} às {safe(row, 'hora_fim')}</div>
-                {progress_html(row)}
-                {chapter_strip(df, ordem)}
-                <div class="yv-kicker yv-reveal yv-delay-2">Agora tocando</div>
-                <div class="yv-story yv-reveal yv-delay-2"><b>{safe(row, 'musica', 'Música ao vivo')}</b> {('· ' + safe(row, 'artista')) if safe(row, 'artista') else ''}</div>
-                <br>
-                <div class="yv-story yv-reveal yv-delay-3">{safe(row, 'conexao_experiencia', 'A conexão entre prato e música aparece aqui.')}</div>
-            </div>
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"""
-        <div class="yv-grid">
-            <div class="yv-mini yv-reveal"><b>Prato</b><br><span class="yv-muted">{safe(row, 'historia_prato')}</span></div>
-            <div class="yv-mini yv-reveal yv-delay-1"><b>Música</b><br><span class="yv-muted">{safe(row, 'historia_musica')}</span></div>
-            <div class="yv-mini yv-reveal yv-delay-2"><b>Experiência</b><br><span class="yv-muted">Carnes, queijos, tempo e atmosfera em uma mesma narrativa.</span></div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(f"""<section class="yv-cinema"><div class="yv-cinema-bg" style="{bg_style}"></div><div class="yv-orb"></div><div class="yv-cinema-content"><div class="yv-kicker yv-reveal">Capítulo {safe(row, 'ordem')} · {safe(row, 'etapa')}</div><div class="yv-h1 yv-reveal yv-delay-1">{safe(row, 'prato', 'Momento YVORA')}</div><div class="yv-white-muted yv-reveal yv-delay-1">{safe(row, 'hora_inicio')} às {safe(row, 'hora_fim')}</div>{progress_html(row)}{chapter_strip(df, ordem)}<div class="yv-kicker yv-reveal yv-delay-2">Agora tocando</div><div class="yv-story yv-reveal yv-delay-2"><b>{safe(row, 'musica', 'Música ao vivo')}</b> {('· ' + safe(row, 'artista')) if safe(row, 'artista') else ''}</div><br><div class="yv-story yv-reveal yv-delay-3">{safe(row, 'conexao_experiencia', 'A conexão entre prato e música aparece aqui.')}</div></div></section>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="yv-grid"><div class="yv-mini yv-reveal"><b>Prato</b><br><span class="yv-muted">{safe(row, 'historia_prato')}</span></div><div class="yv-mini yv-reveal yv-delay-1"><b>Música</b><br><span class="yv-muted">{safe(row, 'historia_musica')}</span></div><div class="yv-mini yv-reveal yv-delay-2"><b>Experiência</b><br><span class="yv-muted">Carnes, queijos, tempo e atmosfera em uma mesma narrativa.</span></div></div>""", unsafe_allow_html=True)
 
 
 def view_banda(session_id: str) -> None:
     df = get_timeline(session_id)
     ordem = get_live(session_id)
     if df.empty:
-        st.warning("Timeline não encontrada.")
+        missing_timeline_help(session_id)
         return
     st.markdown('<div class="yv-card"><div class="yv-h2">Setlist, playlist e ritmo do jantar</div><div class="yv-muted">A coluna modo_musica permite operar com banda ao vivo ou Spotify.</div></div>', unsafe_allow_html=True)
     for _, r in df.iterrows():
@@ -350,7 +288,7 @@ def view_cozinha(session_id: str) -> None:
     ordem = get_live(session_id)
     row = current_row(df, ordem)
     if not row:
-        st.warning("Timeline não encontrada.")
+        missing_timeline_help(session_id)
         return
     nxt = df[df["ordem"] > ordem].head(1)
     st.markdown(f"""<div class="yv-card-dark"><div class="yv-kicker">Cozinha · agora</div><div class="yv-h1">{safe(row, 'prato')}</div><div class="yv-story">{safe(row, 'qtd_convidados')} convidados · status: <b>{safe(row, 'status_cozinha')}</b></div>{progress_html(row)}<br><div class="yv-white-muted">{safe(row, 'observacao_cozinha')}</div></div>""", unsafe_allow_html=True)
@@ -364,7 +302,7 @@ def view_operacao(session_id: str) -> None:
     ordem = get_live(session_id)
     row = current_row(df, ordem)
     if df.empty or not row:
-        st.warning("Timeline não encontrada.")
+        missing_timeline_help(session_id)
         return
     min_ordem = int(df["ordem"].min())
     max_ordem = int(df["ordem"].max())
@@ -383,16 +321,25 @@ def view_operacao(session_id: str) -> None:
 
 inject_css()
 params = st.query_params
-view = str(params.get("view", "cliente")).lower()
-sid = str(params.get("sid", "jantar-teste"))
+sessions_df = get_sessions()
+url_view = str(params.get("view", "cliente")).lower()
+url_sid = str(params.get("sid", "")).strip()
+
+available_sessions = [] if sessions_df.empty or "session_id" not in sessions_df.columns else sessions_df["session_id"].astype(str).str.strip().tolist()
+default_sid = url_sid or (available_sessions[0] if available_sessions else "jantar-teste")
+
+with st.sidebar:
+    st.markdown("### Controle rápido")
+    view = st.selectbox("Visão", ["cliente", "banda", "cozinha", "operacao"], index=["cliente", "banda", "cozinha", "operacao"].index(url_view) if url_view in ["cliente", "banda", "cozinha", "operacao"] else 0)
+    if available_sessions:
+        sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(default_sid) if default_sid in available_sessions else 0)
+    else:
+        sid = st.text_input("Sessão", value=default_sid)
+    st.caption("Links diretos: ?view=cliente&sid=ID_DA_SESSAO")
+
 render_header(view, sid)
-
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
-
-if view not in views:
-    st.warning("Visão inválida. Use view=cliente, view=banda, view=cozinha ou view=operacao.")
-else:
-    views[view](sid)
+views[view](sid)
 
 st.caption("Atualização automática. Para Spotify, inclua as colunas modo_musica e spotify_url na timeline. Para imagens e GIFs, use links públicos em imagem_prato e gif_momento.")
 time.sleep(AUTO_REFRESH_SECONDS)
