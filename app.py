@@ -86,6 +86,15 @@ def inject_css(hide_sidebar: bool = False) -> None:
         .yv-cinema-bg {{ position:absolute; inset:0; background-size:cover; background-position:center; transform:scale(1.06); filter:saturate(.92) contrast(1.02); opacity:.62; animation: slowZoom 18s ease-in-out infinite alternate; }}
         .yv-cinema-content {{ position:relative; z-index:2; padding:clamp(26px, 6vw, 68px); max-width:800px; }}
         .yv-orb {{ position:absolute; width:360px; height:360px; right:-120px; top:-120px; border-radius:50%; background:radial-gradient(circle, rgba(198,169,106,.30), transparent 66%); z-index:2; animation: floatOrb 8s ease-in-out infinite alternate; }}
+        .yv-session-list {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:20px; margin-top:26px; }}
+        .yv-session-link {{ display:block; text-decoration:none !important; color:inherit !important; }}
+        .yv-session-card {{ min-height:260px; position:relative; overflow:hidden; background:rgba(255,255,255,.72); border:1px solid rgba(14,42,71,.12); border-radius:30px; padding:28px; box-shadow:0 18px 50px rgba(14,42,71,.08); transition:transform .35s ease, box-shadow .35s ease; }}
+        .yv-session-card:hover {{ transform:translateY(-4px); box-shadow:0 24px 70px rgba(14,42,71,.16); }}
+        .yv-session-cover {{ position:absolute; inset:0; background-size:cover; background-position:center; opacity:.22; transform:scale(1.05); }}
+        .yv-session-content {{ position:relative; z-index:2; }}
+        .yv-session-title {{ font-family:Georgia, serif; color:{BRAND_BLUE}; font-size:34px; line-height:1.02; margin:10px 0 10px; }}
+        .yv-session-meta {{ color:rgba(71,55,46,.68); font-size:15px; line-height:1.5; }}
+        .yv-session-featured {{ border:1px solid rgba(198,169,106,.55); box-shadow:0 24px 76px rgba(198,169,106,.18); }}
         .yv-card {{ background:rgba(255,255,255,.68); border:1px solid rgba(14,42,71,.12); border-radius:28px; padding:clamp(18px, 3vw, 32px); box-shadow:0 18px 50px rgba(14,42,71,.08); margin-bottom:18px; overflow:hidden; }}
         .yv-card-dark {{ background:linear-gradient(135deg, {BRAND_BLUE}, #16385B); color:{BRAND_BG_SOFT}; border-radius:30px; padding:clamp(22px, 4vw, 40px); box-shadow:0 24px 60px rgba(14,42,71,.22); margin-bottom:18px; }}
         .yv-kicker {{ color:{BRAND_GOLD}; font-size:12px; letter-spacing:2.2px; text-transform:uppercase; font-weight:800; }}
@@ -280,6 +289,13 @@ def internal_unavailable(session_id: str) -> None:
 
 
 
+def session_cell(row: Dict[str, Any], col: str, default: str = "") -> str:
+    value = row.get(col, default)
+    if pd.isna(value):
+        return default
+    return str(value).strip()
+
+
 def view_session_landing() -> None:
     sessions = get_sessions()
     logo_path = find_logo_path()
@@ -287,30 +303,45 @@ def view_session_landing() -> None:
     col1, col2 = st.columns([1, 8])
     with col1:
         if logo_path:
-            st.image(logo_path, width=80)
+            st.image(logo_path, width=82)
+        else:
+            st.markdown('<div class="yv-logo-mark">Y</div>', unsafe_allow_html=True)
     with col2:
         st.markdown('<h1 class="yv-title">YVORA Music</h1>', unsafe_allow_html=True)
-        st.markdown('<div class="yv-subtitle">Escolha sua experiência</div>', unsafe_allow_html=True)
+        st.markdown('<div class="yv-subtitle">Escolha a experiência disponível para iniciar sua jornada.</div>', unsafe_allow_html=True)
 
     if sessions.empty or "session_id" not in sessions.columns:
-        st.warning("Nenhuma sessão disponível")
+        st.markdown('<div class="yv-card"><div class="yv-h2">Experiências em preparação</div><div class="yv-muted">As próximas sessões aparecerão aqui.</div></div>', unsafe_allow_html=True)
         return
 
-    for _, row in sessions.iterrows():
-        sid = str(row.get("session_id", ""))
-        nome = str(row.get("nome", sid))
-        descricao = str(row.get("descricao", "Experiência YVORA"))
+    df = sessions.copy()
+    if "status" in df.columns:
+        df = df[df["status"].astype(str).str.lower().str.strip().isin(["ativo", "live", "publicado", "1", "true", "sim"])]
+    if "ordem_exibicao" in df.columns:
+        df["_ordem"] = pd.to_numeric(df["ordem_exibicao"], errors="coerce").fillna(9999)
+        df = df.sort_values("_ordem")
 
-        st.markdown(f"""
-        <div class="yv-card">
-            <div class="yv-h2">{nome}</div>
-            <div class="yv-muted">{descricao}</div>
-            <br>
-            <a href="?view=cliente&sid={sid}">
-                <button style="background:#0E2A47;color:white;padding:10px 20px;border-radius:20px;border:none;">Iniciar experiência</button>
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
+    if df.empty:
+        st.markdown('<div class="yv-card"><div class="yv-h2">Experiências em preparação</div><div class="yv-muted">As próximas sessões aparecerão aqui.</div></div>', unsafe_allow_html=True)
+        return
+
+    cards = []
+    for _, r in df.iterrows():
+        row = r.to_dict()
+        sid = session_cell(row, "session_id")
+        nome = session_cell(row, "nome", sid)
+        descricao = session_cell(row, "descricao", "Uma experiência YVORA entre música, cozinha e narrativa.")
+        imagem = session_cell(row, "imagem_capa")
+        tema = session_cell(row, "tema_musical")
+        destaque = session_cell(row, "destaque") in ["1", "true", "True", "sim", "yes"]
+        cover = f'<div class="yv-session-cover" style="background-image:url({imagem});"></div>' if imagem else ''
+        featured = ' yv-session-featured' if destaque else ''
+        tema_html = f'<span class="yv-pill">{tema}</span>' if tema else '<span class="yv-pill">Experiência</span>'
+        card = f'<a class="yv-session-link" href="?view=cliente&sid={sid}"><div class="yv-session-card{featured}">{cover}<div class="yv-session-content"><div class="yv-kicker">Experiência disponível</div><div class="yv-session-title">{nome}</div><div class="yv-session-meta">{descricao}</div><br>{tema_html}<span class="yv-pill">Iniciar</span></div></div></a>'
+        cards.append(card)
+
+    st.markdown('<div class="yv-session-list">' + ''.join(cards) + '</div>', unsafe_allow_html=True)
+
 
 def view_cliente(session_id: str) -> None:
     df = get_timeline(session_id)
@@ -449,9 +480,9 @@ def get_active_view_and_session() -> Tuple[str, str]:
     sessions_df = get_sessions()
     available_sessions = [] if sessions_df.empty or "session_id" not in sessions_df.columns else sessions_df["session_id"].astype(str).str.strip().tolist()
     sid = requested_sid or (available_sessions[0] if available_sessions else "jantar-teste")
-    view = requested_view if requested_view in VIEW_OPTIONS else "cliente"
+    view = requested_view if requested_view in VIEW_OPTIONS else ""
 
-    show_sidebar = requested_admin or view in INTERNAL_VIEWS
+    show_sidebar = bool(view) and (requested_admin or view in INTERNAL_VIEWS)
     if show_sidebar:
         with st.sidebar:
             st.markdown("### Visões YVORA")
@@ -476,7 +507,7 @@ def get_active_view_and_session() -> Tuple[str, str]:
 params_for_css = st.query_params
 initial_view_for_css = str(params_for_css.get("view", "cliente")).lower().strip()
 admin_for_css = str(params_for_css.get("admin", "0")).strip().lower() in ["1", "true", "sim", "yes"]
-hide_sidebar_for_css = initial_view_for_css == "cliente" and not admin_for_css
+hide_sidebar_for_css = (initial_view_for_css in ["", "cliente"]) and not admin_for_css
 inject_css(hide_sidebar=hide_sidebar_for_css)
 view, sid = get_active_view_and_session()
 
@@ -484,9 +515,8 @@ if not view:
     view_session_landing()
 else:
     render_header(view, sid)
-
-views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
-views[view](sid)
+    views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
+    views[view](sid)
 
 time.sleep(AUTO_REFRESH_SECONDS)
 st.rerun()
