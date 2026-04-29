@@ -3,18 +3,10 @@ from pathlib import Path
 p = Path('app.py')
 s = p.read_text(encoding='utf-8')
 
-# ADD LANDING CSS
 css_anchor = "        .yv-card {{ background:rgba(255,255,255,.68);"
 css_insert = "        .yv-session-list {{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:20px; margin-top:26px; }}\n        .yv-session-link {{ display:block; text-decoration:none !important; color:inherit !important; }}\n        .yv-session-card {{ min-height:260px; position:relative; overflow:hidden; background:rgba(255,255,255,.72); border:1px solid rgba(14,42,71,.12); border-radius:30px; padding:28px; box-shadow:0 18px 50px rgba(14,42,71,.08); transition:transform .35s ease, box-shadow .35s ease; }}\n        .yv-session-card:hover {{ transform:translateY(-4px); box-shadow:0 24px 70px rgba(14,42,71,.16); }}\n        .yv-session-cover {{ position:absolute; inset:0; background-size:cover; background-position:center; opacity:.22; transform:scale(1.05); }}\n        .yv-session-content {{ position:relative; z-index:2; }}\n        .yv-session-title {{ font-family:Georgia, serif; color:{BRAND_BLUE}; font-size:34px; line-height:1.02; margin:10px 0 10px; }}\n        .yv-session-meta {{ color:rgba(71,55,46,.68); font-size:15px; line-height:1.5; }}\n        .yv-session-featured {{ border:1px solid rgba(198,169,106,.55); box-shadow:0 24px 76px rgba(198,169,106,.18); }}\n        .yv-card {{ background:rgba(255,255,255,.68);"
 if ".yv-session-list" not in s:
     s = s.replace(css_anchor, css_insert)
-
-# REPLACE / ADD SESSION LANDING
-start = s.find("def view_session_landing() -> None:")
-if start != -1:
-    end = s.find("\ndef view_cliente(session_id: str) -> None:", start)
-else:
-    end = -1
 
 landing_code = '''def session_cell(row: Dict[str, Any], col: str, default: str = "") -> str:
     value = row.get(col, default)
@@ -71,18 +63,24 @@ def view_session_landing() -> None:
 
 '''
 
-if start != -1 and end != -1:
-    s = s[:start] + landing_code + s[end+1:]
-elif "def view_session_landing" not in s:
+start = s.find("def session_cell(row: Dict[str, Any]")
+if start != -1:
+    end = s.find("def view_cliente(session_id: str) -> None:", start)
+    if end != -1:
+        s = s[:start] + landing_code + s[end:]
+elif "def view_session_landing" in s:
+    start = s.find("def view_session_landing() -> None:")
+    end = s.find("def view_cliente(session_id: str) -> None:", start)
+    if start != -1 and end != -1:
+        s = s[:start] + landing_code + s[end:]
+else:
     s = s.replace("def view_cliente(session_id: str) -> None:", landing_code + "def view_cliente(session_id: str) -> None:")
 
-# DEFAULT APP OPENS LANDING, NOT CLIENT DIRECTLY
 s = s.replace('requested_view = str(params.get("view", "cliente")).lower().strip()', 'requested_view = str(params.get("view", "")).lower().strip()')
 s = s.replace('view = requested_view if requested_view in VIEW_OPTIONS else "cliente"', 'view = requested_view if requested_view in VIEW_OPTIONS else ""')
 s = s.replace('show_sidebar = requested_admin or view in INTERNAL_VIEWS', 'show_sidebar = bool(view) and (requested_admin or view in INTERNAL_VIEWS)')
 s = s.replace('hide_sidebar_for_css = initial_view_for_css == "cliente" and not admin_for_css', 'hide_sidebar_for_css = (initial_view_for_css in ["", "cliente"]) and not admin_for_css')
 
-# ROUTE BASE URL TO LANDING. Make replacement idempotent.
 old = '''render_header(view, sid)
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
 views[view](sid)'''
@@ -94,14 +92,14 @@ else:
     views[view](sid)'''
 s = s.replace(old, new)
 
-# Fix a previous partial patch pattern if present.
-s = s.replace('''
+broken = '''
 if not view:
     view_session_landing()
 else:
     render_header(view, sid)
 
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
-views[view](sid)''', new)
+views[view](sid)'''
+s = s.replace(broken, "\n" + new)
 
 p.write_text(s, encoding='utf-8')
