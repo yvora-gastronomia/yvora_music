@@ -103,7 +103,7 @@ def inject_css(hide_sidebar: bool = False) -> None:
         .yv-status-card {{ background:rgba(255,255,255,.58); border:1px solid rgba(14,42,71,.1); border-radius:20px; padding:14px 16px; }}
         .yv-reveal {{ animation: revealUp .9s cubic-bezier(.2,.8,.2,1) both; }}
         .yv-delay-1 {{ animation-delay:.12s; }} .yv-delay-2 {{ animation-delay:.24s; }} .yv-delay-3 {{ animation-delay:.36s; }}
-        .yv-grid-disabled {{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:16px; }}
+        .yv-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:16px; }}
         .yv-mini {{ background:rgba(255,255,255,.58); border:1px solid rgba(14,42,71,.1); border-radius:22px; padding:18px; box-shadow:0 12px 28px rgba(14,42,71,.05); }}
         .yv-mini b {{ color:{BRAND_BLUE}; }}
         .yv-now {{ border-left:5px solid {BRAND_GOLD}; }}
@@ -116,7 +116,7 @@ def inject_css(hide_sidebar: bool = False) -> None:
         .yv-chapter-strip {{ display:flex; gap:8px; margin:18px 0; overflow:auto; padding-bottom:4px; }} .yv-dot {{ min-width:56px; height:6px; border-radius:999px; background:rgba(14,42,71,.16); }} .yv-dot-on {{ background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 12px rgba(198,169,106,.45); }}
         .stButton > button {{ border-radius:999px !important; background:{BRAND_BLUE} !important; color:{BRAND_BG_SOFT} !important; border:1px solid rgba(14,42,71,.2) !important; min-height:2.7rem !important; font-weight:700 !important; }}
         @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }} @keyframes sceneBreath {{ from {{ transform:scale(1); }} to {{ transform:scale(1.012); }} }} @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }} @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
-        @media(max-width:760px) {{ .yv-grid-disabled {{ grid-template-columns:1fr; }} .yv-cinema {{ min-height:620px; }} .yv-cinema:before {{ background:linear-gradient(180deg, rgba(6,22,38,.94), rgba(6,22,38,.72)); }} }}
+        @media(max-width:760px) {{ .yv-grid {{ grid-template-columns:1fr; }} .yv-cinema {{ min-height:620px; }} .yv-cinema:before {{ background:linear-gradient(180deg, rgba(6,22,38,.94), rgba(6,22,38,.72)); }} }}
         </style>
         """, unsafe_allow_html=True)
 
@@ -294,15 +294,36 @@ def view_cliente(session_id: str) -> None:
         <div class="yv-cinema-bg" style="{bg_style}"></div>
         <div class="yv-orb"></div>
         <div class="yv-cinema-content">
-            <div class="yv-kicker yv-reveal">YVORA</div>
+            <div class="yv-kicker yv-reveal">YVORA Music Experience</div>
             <div class="yv-h1 yv-reveal yv-delay-1">{safe(row, 'prato', 'Experiência YVORA')}</div>
             <div class="yv-kicker yv-reveal yv-delay-2">Agora tocando</div>
             <div class="yv-story yv-reveal yv-delay-2">
                 <b>{safe(row, 'musica', 'Música ao vivo')}</b>
                 {('· ' + safe(row, 'artista')) if safe(row, 'artista') else ''}
             </div>
+            <br>
+            <div class="yv-story yv-reveal yv-delay-3">
+                {safe(row, 'conexao_experiencia', 'A música e o prato se encontram em uma experiência construída para este momento.')}
+            </div>
         </div>
     </section>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="yv-grid">
+        <div class="yv-mini yv-reveal">
+            <b>Prato</b><br>
+            <span class="yv-muted">{safe(row, 'historia_prato')}</span>
+        </div>
+        <div class="yv-mini yv-reveal yv-delay-1">
+            <b>Música</b><br>
+            <span class="yv-muted">{safe(row, 'historia_musica')}</span>
+        </div>
+        <div class="yv-mini yv-reveal yv-delay-2">
+            <b>Harmonização</b><br>
+            <span class="yv-muted">{safe(row, 'conexao_experiencia')}</span>
+        </div>
+    </div>
     """, unsafe_allow_html=True)
 
 
