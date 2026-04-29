@@ -18,6 +18,7 @@ BRAND_TEXT = "#47372E"
 AUTO_REFRESH_SECONDS = 5
 LOGO_PATHS = ["assets/logo.png", "assets/yvora_logo.png", "yvora_logo.JPG", "yvora_logo.jpg", "yvora_logo.png"]
 INTERNAL_VIEWS = ["banda", "cozinha", "operacao"]
+VIEW_OPTIONS = ["cliente", "banda", "cozinha", "operacao"]
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
 
@@ -129,7 +130,9 @@ def render_header(view: str, session_id: str) -> None:
         else:
             st.markdown('<div class="yv-logo-mark">Y</div>', unsafe_allow_html=True)
     with left[1]:
-        st.markdown(f'<h1 class="yv-title">YVORA Music</h1><div class="yv-subtitle">Uma coreografia entre cozinha, salão, música e narrativa.</div>', unsafe_allow_html=True)
+        title_map = {"cliente": "YVORA Music", "banda": "YVORA Music | Banda", "cozinha": "YVORA Music | Cozinha", "operacao": "YVORA Music | Operação"}
+        subtitle_map = {"cliente": "Uma coreografia entre cozinha, salão, música e narrativa.", "banda": "Setlist e ritmo do jantar em tempo real.", "cozinha": "Prato atual, próximo prato e ritmo de serviço.", "operacao": "Controle do jantar, tempo e sequência da experiência."}
+        st.markdown(f'<h1 class="yv-title">{title_map.get(view, "YVORA Music")}</h1><div class="yv-subtitle">{subtitle_map.get(view, "")}</div>', unsafe_allow_html=True)
     if view != "cliente":
         with left[2]:
             st.markdown(f'<span class="yv-pill">{view.upper()}</span><span class="yv-pill">{session_id}</span>', unsafe_allow_html=True)
@@ -322,27 +325,35 @@ def view_operacao(session_id: str) -> None:
     st.dataframe(df[[c for c in show_cols if c in df.columns]], use_container_width=True, hide_index=True)
 
 
+def get_active_view_and_session() -> Tuple[str, str]:
+    params = st.query_params
+    requested_view = str(params.get("view", "cliente")).lower().strip()
+    requested_sid = str(params.get("sid", "")).strip()
+    sessions_df = get_sessions()
+    available_sessions = [] if sessions_df.empty or "session_id" not in sessions_df.columns else sessions_df["session_id"].astype(str).str.strip().tolist()
+    sid = requested_sid or (available_sessions[0] if available_sessions else "jantar-teste")
+    view = requested_view if requested_view in VIEW_OPTIONS else "cliente"
+
+    if view in INTERNAL_VIEWS:
+        with st.sidebar:
+            st.markdown("### Controle rápido")
+            selected_view = st.selectbox("Visão", VIEW_OPTIONS, index=VIEW_OPTIONS.index(view), key="selected_view")
+            if available_sessions:
+                selected_sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(sid) if sid in available_sessions else 0, key="selected_sid")
+            else:
+                selected_sid = st.text_input("Sessão", value=sid, key="selected_sid_text")
+            if selected_view != view or selected_sid != sid:
+                st.query_params["view"] = selected_view
+                st.query_params["sid"] = selected_sid
+                st.rerun()
+            view = selected_view
+            sid = selected_sid
+
+    return view, sid
+
+
 inject_css()
-params = st.query_params
-sessions_df = get_sessions()
-url_view = str(params.get("view", "cliente")).lower()
-url_sid = str(params.get("sid", "")).strip()
-
-available_sessions = [] if sessions_df.empty or "session_id" not in sessions_df.columns else sessions_df["session_id"].astype(str).str.strip().tolist()
-default_sid = url_sid or (available_sessions[0] if available_sessions else "jantar-teste")
-view_options = ["cliente", "banda", "cozinha", "operacao"]
-view = url_view if url_view in view_options else "cliente"
-sid = default_sid
-
-if view in INTERNAL_VIEWS:
-    with st.sidebar:
-        st.markdown("### Controle rápido")
-        view = st.selectbox("Visão", view_options, index=view_options.index(view))
-        if available_sessions:
-            sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(default_sid) if default_sid in available_sessions else 0)
-        else:
-            sid = st.text_input("Sessão", value=default_sid)
-
+view, sid = get_active_view_and_session()
 render_header(view, sid)
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
 views[view](sid)
