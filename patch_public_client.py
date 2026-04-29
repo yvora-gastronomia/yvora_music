@@ -56,7 +56,8 @@ def view_session_landing() -> None:
         cover = f'<div class="yv-session-cover" style="background-image:url({imagem});"></div>' if imagem else ''
         featured = ' yv-session-featured' if destaque else ''
         tema_html = f'<span class="yv-pill">{tema}</span>' if tema else '<span class="yv-pill">Experiência</span>'
-        cards.append(f'''<a class="yv-session-link" href="?view=cliente&sid={sid}"><div class="yv-session-card{featured}">{cover}<div class="yv-session-content"><div class="yv-kicker">Experiência disponível</div><div class="yv-session-title">{nome}</div><div class="yv-session-meta">{descricao}</div><br>{tema_html}<span class="yv-pill">Iniciar</span></div></div></a>''')
+        card = f'<a class="yv-session-link" href="?view=cliente&sid={sid}"><div class="yv-session-card{featured}">{cover}<div class="yv-session-content"><div class="yv-kicker">Experiência disponível</div><div class="yv-session-title">{nome}</div><div class="yv-session-meta">{descricao}</div><br>{tema_html}<span class="yv-pill">Iniciar</span></div></div></a>'
+        cards.append(card)
 
     st.markdown('<div class="yv-session-list">' + ''.join(cards) + '</div>', unsafe_allow_html=True)
 
