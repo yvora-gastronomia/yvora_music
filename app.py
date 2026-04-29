@@ -17,6 +17,7 @@ BRAND_GOLD = "#C6A96A"
 BRAND_TEXT = "#47372E"
 AUTO_REFRESH_SECONDS = 5
 LOGO_PATHS = ["assets/logo.png", "assets/yvora_logo.png", "yvora_logo.JPG", "yvora_logo.jpg", "yvora_logo.png"]
+INTERNAL_VIEWS = ["banda", "cozinha", "operacao"]
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
 
@@ -73,9 +74,6 @@ def inject_css() -> None:
         html, body, [data-testid="stAppViewContainer"] {{ background: radial-gradient(circle at 12% 8%, rgba(198,169,106,0.20), transparent 30%), radial-gradient(circle at 92% 18%, rgba(14,42,71,0.10), transparent 34%), linear-gradient(135deg, {BRAND_BG_SOFT} 0%, {BRAND_BG} 100%) !important; color: {BRAND_TEXT}; }}
         [data-testid="stHeader"] {{ background: transparent !important; }}
         .block-container {{ padding-top: 1.2rem; max-width: 1240px; }}
-        .yv-shell {{ animation: fadeIn .65s cubic-bezier(.2,.8,.2,1); }}
-        .yv-header {{ display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; padding:14px 18px; border:1px solid rgba(14,42,71,0.12); border-radius:28px; background:rgba(255,255,255,0.46); backdrop-filter:blur(12px); box-shadow:0 18px 45px rgba(14,42,71,0.07); }}
-        .yv-brand {{ display:flex; align-items:center; gap:14px; }}
         .yv-logo-mark {{ width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{BRAND_BLUE}; color:{BRAND_BG_SOFT}; font-family:Georgia, serif; font-size:22px; letter-spacing:1px; }}
         .yv-title {{ margin:0; color:{BRAND_BLUE}; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(24px, 4vw, 42px); line-height:1.0; letter-spacing:.3px; }}
         .yv-subtitle {{ margin-top:6px; color:rgba(14,42,71,.68); font-size:14px; }}
@@ -107,8 +105,8 @@ def inject_css() -> None:
         .yv-play-card {{ background:rgba(255,255,255,.52); border:1px solid rgba(14,42,71,.1); border-radius:22px; padding:16px; margin-top:12px; }}
         .yv-chapter-strip {{ display:flex; gap:8px; margin:18px 0; overflow:auto; padding-bottom:4px; }} .yv-dot {{ min-width:56px; height:6px; border-radius:999px; background:rgba(14,42,71,.16); }} .yv-dot-on {{ background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 12px rgba(198,169,106,.45); }}
         .stButton > button {{ border-radius:999px !important; background:{BRAND_BLUE} !important; color:{BRAND_BG_SOFT} !important; border:1px solid rgba(14,42,71,.2) !important; min-height:2.7rem !important; font-weight:700 !important; }}
-        @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }} @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }} @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }} @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
-        @media(max-width:760px) {{ .yv-header {{ align-items:flex-start; flex-direction:column; }} .yv-grid {{ grid-template-columns:1fr; }} .yv-cinema {{ min-height:620px; }} .yv-cinema:before {{ background:linear-gradient(180deg, rgba(6,22,38,.94), rgba(6,22,38,.72)); }} }}
+        @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }} @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }} @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
+        @media(max-width:760px) {{ .yv-grid {{ grid-template-columns:1fr; }} .yv-cinema {{ min-height:620px; }} .yv-cinema:before {{ background:linear-gradient(180deg, rgba(6,22,38,.94), rgba(6,22,38,.72)); }} }}
         </style>
         """, unsafe_allow_html=True)
 
@@ -138,14 +136,12 @@ def get_sheet():
     google_block = st.secrets.get("google", {})
     sheet_id = google_block.get("sheet_id")
     if not sheet_id:
-        st.error("Falta configurar [google].sheet_id nos Secrets do Streamlit.")
         st.stop()
     if google_block.get("service_account_json"):
         sa = json.loads(google_block["service_account_json"])
     elif "gcp_service_account" in st.secrets:
         sa = dict(st.secrets["gcp_service_account"])
     else:
-        st.error("Falta configurar [google].service_account_json ou [gcp_service_account] nos Secrets.")
         st.stop()
     if "\\n" in sa.get("private_key", "") and "\n" not in sa.get("private_key", ""):
         sa["private_key"] = sa["private_key"].replace("\\n", "\n")
@@ -246,14 +242,17 @@ def playback_block(row: Dict[str, Any]) -> str:
     spotify = safe(row, "spotify_url")
     label = "Banda ao vivo" if modo.lower() != "spotify" else "Playlist Spotify"
     link = f'<br><a href="{spotify}" target="_blank">Abrir playlist ou faixa</a>' if spotify else ""
-    return f'<div class="yv-play-card"><b>Modo musical:</b> {label}<br><span class="yv-muted">Use modo_musica como banda ou spotify. Para Spotify, preencha spotify_url.</span>{link}</div>'
+    return f'<div class="yv-play-card"><b>Modo musical:</b> {label}{link}</div>'
 
 
-def missing_timeline_help(session_id: str) -> None:
+def public_unavailable() -> None:
+    st.markdown('<div class="yv-card"><div class="yv-h2">Experiência em preparação</div><div class="yv-muted">Em instantes, a próxima etapa da experiência aparecerá aqui.</div></div>', unsafe_allow_html=True)
+
+
+def internal_unavailable(session_id: str) -> None:
     sessions = get_sessions()
     available = [] if sessions.empty or "session_id" not in sessions.columns else sessions["session_id"].astype(str).tolist()
     st.warning(f"Timeline não encontrada para a sessão: {session_id}")
-    st.info("Use a barra lateral para escolher uma sessão existente ou confirme se a aba timeline tem linhas com o mesmo session_id.")
     if available:
         st.write("Sessões encontradas:", ", ".join(available))
 
@@ -263,7 +262,7 @@ def view_cliente(session_id: str) -> None:
     ordem = get_live(session_id)
     row = current_row(df, ordem)
     if not row:
-        missing_timeline_help(session_id)
+        public_unavailable()
         return
     bg = media_url(row)
     bg_style = f"background-image:url('{bg}');" if bg else "background-image:radial-gradient(circle at 70% 30%, rgba(198,169,106,.26), transparent 36%);"
@@ -275,9 +274,9 @@ def view_banda(session_id: str) -> None:
     df = get_timeline(session_id)
     ordem = get_live(session_id)
     if df.empty:
-        missing_timeline_help(session_id)
+        internal_unavailable(session_id)
         return
-    st.markdown('<div class="yv-card"><div class="yv-h2">Setlist, playlist e ritmo do jantar</div><div class="yv-muted">A coluna modo_musica permite operar com banda ao vivo ou Spotify.</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="yv-card"><div class="yv-h2">Setlist e ritmo do jantar</div></div>', unsafe_allow_html=True)
     for _, r in df.iterrows():
         cls = "yv-card yv-now" if int(r["ordem"]) == ordem else "yv-card"
         st.markdown(f"""<div class="{cls}"><span class="yv-pill">{safe(r, 'hora_inicio')} · {safe(r, 'hora_fim')}</span><span class="yv-pill">{safe(r, 'etapa')}</span><span class="yv-pill">{safe(r, 'modo_musica', 'banda')}</span><h3 style="color:{BRAND_BLUE}; margin:14px 0 4px;">{safe(r, 'musica', 'Música ao vivo')}</h3><div class="yv-muted">{safe(r, 'artista')} · {safe(r, 'duracao_musica')}</div>{progress_html(r, light=True) if int(r['ordem']) == ordem else ''}<p>{safe(r, 'observacao_banda')}</p>{playback_block(r)}</div>""", unsafe_allow_html=True)
@@ -288,7 +287,7 @@ def view_cozinha(session_id: str) -> None:
     ordem = get_live(session_id)
     row = current_row(df, ordem)
     if not row:
-        missing_timeline_help(session_id)
+        internal_unavailable(session_id)
         return
     nxt = df[df["ordem"] > ordem].head(1)
     st.markdown(f"""<div class="yv-card-dark"><div class="yv-kicker">Cozinha · agora</div><div class="yv-h1">{safe(row, 'prato')}</div><div class="yv-story">{safe(row, 'qtd_convidados')} convidados · status: <b>{safe(row, 'status_cozinha')}</b></div>{progress_html(row)}<br><div class="yv-white-muted">{safe(row, 'observacao_cozinha')}</div></div>""", unsafe_allow_html=True)
@@ -302,7 +301,7 @@ def view_operacao(session_id: str) -> None:
     ordem = get_live(session_id)
     row = current_row(df, ordem)
     if df.empty or not row:
-        missing_timeline_help(session_id)
+        internal_unavailable(session_id)
         return
     min_ordem = int(df["ordem"].min())
     max_ordem = int(df["ordem"].max())
@@ -327,20 +326,22 @@ url_sid = str(params.get("sid", "")).strip()
 
 available_sessions = [] if sessions_df.empty or "session_id" not in sessions_df.columns else sessions_df["session_id"].astype(str).str.strip().tolist()
 default_sid = url_sid or (available_sessions[0] if available_sessions else "jantar-teste")
+view_options = ["cliente", "banda", "cozinha", "operacao"]
+view = url_view if url_view in view_options else "cliente"
+sid = default_sid
 
-with st.sidebar:
-    st.markdown("### Controle rápido")
-    view = st.selectbox("Visão", ["cliente", "banda", "cozinha", "operacao"], index=["cliente", "banda", "cozinha", "operacao"].index(url_view) if url_view in ["cliente", "banda", "cozinha", "operacao"] else 0)
-    if available_sessions:
-        sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(default_sid) if default_sid in available_sessions else 0)
-    else:
-        sid = st.text_input("Sessão", value=default_sid)
-    st.caption("Links diretos: ?view=cliente&sid=ID_DA_SESSAO")
+if view in INTERNAL_VIEWS:
+    with st.sidebar:
+        st.markdown("### Controle rápido")
+        view = st.selectbox("Visão", view_options, index=view_options.index(view))
+        if available_sessions:
+            sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(default_sid) if default_sid in available_sessions else 0)
+        else:
+            sid = st.text_input("Sessão", value=default_sid)
 
 render_header(view, sid)
 views = {"cliente": view_cliente, "banda": view_banda, "cozinha": view_cozinha, "operacao": view_operacao}
 views[view](sid)
 
-st.caption("Atualização automática. Para Spotify, inclua as colunas modo_musica e spotify_url na timeline. Para imagens e GIFs, use links públicos em imagem_prato e gif_momento.")
 time.sleep(AUTO_REFRESH_SECONDS)
 st.rerun()
