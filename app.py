@@ -17,7 +17,6 @@ BRAND_GOLD = "#C6A96A"
 BRAND_TEXT = "#47372E"
 AUTO_REFRESH_SECONDS = 5
 LOGO_PATHS = ["assets/logo.png", "assets/yvora_logo.png", "yvora_logo.JPG", "yvora_logo.jpg", "yvora_logo.png"]
-INTERNAL_VIEWS = ["banda", "cozinha", "operacao"]
 VIEW_OPTIONS = ["cliente", "banda", "cozinha", "operacao"]
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
@@ -334,20 +333,20 @@ def get_active_view_and_session() -> Tuple[str, str]:
     sid = requested_sid or (available_sessions[0] if available_sessions else "jantar-teste")
     view = requested_view if requested_view in VIEW_OPTIONS else "cliente"
 
-    if view in INTERNAL_VIEWS:
-        with st.sidebar:
-            st.markdown("### Controle rápido")
-            selected_view = st.selectbox("Visão", VIEW_OPTIONS, index=VIEW_OPTIONS.index(view), key="selected_view")
-            if available_sessions:
-                selected_sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(sid) if sid in available_sessions else 0, key="selected_sid")
-            else:
-                selected_sid = st.text_input("Sessão", value=sid, key="selected_sid_text")
-            if selected_view != view or selected_sid != sid:
-                st.query_params["view"] = selected_view
-                st.query_params["sid"] = selected_sid
-                st.rerun()
-            view = selected_view
-            sid = selected_sid
+    with st.sidebar:
+        st.markdown("### Visões YVORA")
+        selected_view = st.radio("Escolha a visão", VIEW_OPTIONS, index=VIEW_OPTIONS.index(view), key="selected_view", horizontal=False)
+        if available_sessions:
+            selected_sid = st.selectbox("Sessão", available_sessions, index=available_sessions.index(sid) if sid in available_sessions else 0, key="selected_sid")
+        else:
+            selected_sid = st.text_input("Sessão", value=sid, key="selected_sid_text")
+        st.caption("Use Cliente para QR público. Use Banda, Cozinha e Operação para controle interno.")
+        if selected_view != view or selected_sid != sid:
+            st.query_params["view"] = selected_view
+            st.query_params["sid"] = selected_sid
+            st.rerun()
+        view = selected_view
+        sid = selected_sid
 
     return view, sid
 
