@@ -2,7 +2,7 @@ import json
 import os
 import time
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import gspread
 import pandas as pd
@@ -16,8 +16,55 @@ BRAND_BLUE = "#0E2A47"
 BRAND_GOLD = "#C6A96A"
 BRAND_TEXT = "#47372E"
 AUTO_REFRESH_SECONDS = 5
+LOGO_PATHS = ["assets/logo.png", "assets/yvora_logo.png", "yvora_logo.JPG", "yvora_logo.jpg", "yvora_logo.png"]
 
 st.set_page_config(page_title=APP_TITLE, layout="wide")
+
+
+def find_logo_path() -> Optional[str]:
+    for path in LOGO_PATHS:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def parse_time_value(value: Any) -> Optional[datetime]:
+    if value is None or pd.isna(value):
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    today = datetime.now().date()
+    for fmt in ["%H:%M", "%H:%M:%S"]:
+        try:
+            t = datetime.strptime(text, fmt).time()
+            return datetime.combine(today, t)
+        except Exception:
+            pass
+    try:
+        dt = pd.to_datetime(text, errors="coerce")
+        if pd.isna(dt):
+            return None
+        return dt.to_pydatetime().replace(year=today.year, month=today.month, day=today.day)
+    except Exception:
+        return None
+
+
+def progress_for_row(row: Dict[str, Any]) -> Tuple[int, str, str]:
+    start = parse_time_value(row.get("hora_inicio"))
+    end = parse_time_value(row.get("hora_fim"))
+    now = datetime.now()
+    if not start or not end or end <= start:
+        return 0, "Tempo não definido", ""
+    total = max((end - start).total_seconds(), 1)
+    elapsed = (now - start).total_seconds()
+    pct = int(max(0, min(100, (elapsed / total) * 100)))
+    remaining = int(max(0, (end - now).total_seconds()))
+    mm = remaining // 60
+    ss = remaining % 60
+    label = "Ainda não iniciou" if elapsed < 0 else ("Etapa concluída" if pct >= 100 else f"{mm:02d}:{ss:02d} restantes")
+    detail = f"{start.strftime('%H:%M')} até {end.strftime('%H:%M')}"
+    return pct, label, detail
 
 
 def inject_css() -> None:
@@ -33,46 +80,57 @@ def inject_css() -> None:
         [data-testid="stHeader"] {{ background: transparent !important; }}
         .block-container {{ padding-top: 1.6rem; max-width: 1180px; }}
         .yv-shell {{ animation: fadeIn .55s ease-in-out; }}
-        .yv-header {{
-            display: flex; align-items: center; justify-content: space-between; gap: 18px;
-            margin-bottom: 18px; padding: 14px 18px;
-            border: 1px solid rgba(14,42,71,0.12); border-radius: 26px;
-            background: rgba(255,255,255,0.48); backdrop-filter: blur(8px);
-            box-shadow: 0 18px 45px rgba(14,42,71,0.07);
-        }}
+        .yv-header {{ display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:18px; padding:14px 18px; border:1px solid rgba(14,42,71,0.12); border-radius:26px; background:rgba(255,255,255,0.48); backdrop-filter:blur(8px); box-shadow:0 18px 45px rgba(14,42,71,0.07); }}
         .yv-brand {{ display:flex; align-items:center; gap:14px; }}
-        .yv-logo-mark {{
-            width: 54px; height: 54px; border-radius: 50%; display:flex; align-items:center; justify-content:center;
-            background: {BRAND_BLUE}; color: {BRAND_BG_SOFT}; font-family: Georgia, serif; font-size: 22px; letter-spacing: 1px;
-        }}
-        .yv-title {{ margin:0; color:{BRAND_BLUE}; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(24px, 4vw, 42px); line-height:1.0; letter-spacing:.3px; }}
-        .yv-subtitle {{ margin-top:6px; color: rgba(14,42,71,.68); font-size: 14px; }}
-        .yv-pill {{ display:inline-flex; align-items:center; justify-content:center; padding: 7px 13px; border-radius: 999px; background: rgba(14,42,71,.08); color:{BRAND_BLUE}; font-size:12px; font-weight:700; border: 1px solid rgba(14,42,71,.08); margin:2px; }}
-        .yv-card {{ background: rgba(255,255,255,.68); border: 1px solid rgba(14,42,71,.12); border-radius: 28px; padding: clamp(18px, 3vw, 32px); box-shadow: 0 18px 50px rgba(14,42,71,.08); margin-bottom: 18px; overflow:hidden; }}
-        .yv-card-dark {{ background: linear-gradient(135deg, {BRAND_BLUE}, #16385B); color: {BRAND_BG_SOFT}; border-radius: 30px; padding: clamp(22px, 4vw, 40px); box-shadow: 0 24px 60px rgba(14,42,71,.22); margin-bottom: 18px; }}
+        .yv-logo-img {{ width:72px; max-height:72px; object-fit:contain; border-radius:18px; }}
+        .yv-logo-mark {{ width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:{BRAND_BLUE}; color:{BRAND_BG_SOFT}; font-family:Georgia, serif; font-size:22px; letter-spacing:1px; }}
+        .yv-title {{ margin:0; color:{BRAND_BLUE}; font-family:Georgia, 'Times New Roman', serif; font-size:clamp(24px, 4vw, 42px); line-height:1.0; letter-spacing:.3px; }}
+        .yv-subtitle {{ margin-top:6px; color:rgba(14,42,71,.68); font-size:14px; }}
+        .yv-pill {{ display:inline-flex; align-items:center; justify-content:center; padding:7px 13px; border-radius:999px; background:rgba(14,42,71,.08); color:{BRAND_BLUE}; font-size:12px; font-weight:700; border:1px solid rgba(14,42,71,.08); margin:2px; }}
+        .yv-card {{ background:rgba(255,255,255,.68); border:1px solid rgba(14,42,71,.12); border-radius:28px; padding:clamp(18px, 3vw, 32px); box-shadow:0 18px 50px rgba(14,42,71,.08); margin-bottom:18px; overflow:hidden; }}
+        .yv-card-dark {{ background:linear-gradient(135deg, {BRAND_BLUE}, #16385B); color:{BRAND_BG_SOFT}; border-radius:30px; padding:clamp(22px, 4vw, 40px); box-shadow:0 24px 60px rgba(14,42,71,.22); margin-bottom:18px; }}
         .yv-kicker {{ color:{BRAND_GOLD}; font-size:12px; letter-spacing:1.9px; text-transform:uppercase; font-weight:800; }}
-        .yv-h1 {{ font-family: Georgia, serif; font-size: clamp(30px, 6vw, 64px); line-height: .98; margin: 8px 0 12px; }}
-        .yv-h2 {{ font-family: Georgia, serif; color:{BRAND_BLUE}; font-size: clamp(22px, 3vw, 34px); margin: 0 0 10px; }}
-        .yv-muted {{ color: rgba(71,55,46,.68); font-size:14px; }}
-        .yv-white-muted {{ color: rgba(250,246,239,.74); font-size:15px; line-height:1.55; }}
-        .yv-story {{ font-size: 18px; line-height:1.65; color: rgba(250,246,239,.92); max-width: 760px; }}
-        .yv-grid {{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-top:16px; }}
-        .yv-mini {{ background: rgba(255,255,255,.58); border: 1px solid rgba(14,42,71,.1); border-radius: 20px; padding: 14px; }}
+        .yv-h1 {{ font-family:Georgia, serif; font-size:clamp(30px, 6vw, 64px); line-height:.98; margin:8px 0 12px; }}
+        .yv-h2 {{ font-family:Georgia, serif; color:{BRAND_BLUE}; font-size:clamp(22px, 3vw, 34px); margin:0 0 10px; }}
+        .yv-muted {{ color:rgba(71,55,46,.68); font-size:14px; }}
+        .yv-white-muted {{ color:rgba(250,246,239,.74); font-size:15px; line-height:1.55; }}
+        .yv-story {{ font-size:18px; line-height:1.65; color:rgba(250,246,239,.92); max-width:760px; }}
+        .yv-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:16px; }}
+        .yv-mini {{ background:rgba(255,255,255,.58); border:1px solid rgba(14,42,71,.1); border-radius:20px; padding:14px; }}
         .yv-mini b {{ color:{BRAND_BLUE}; }}
-        .yv-now {{ border-left: 5px solid {BRAND_GOLD}; }}
-        .yv-img img {{ border-radius: 24px; }}
-        .stButton > button {{ border-radius: 999px !important; background: {BRAND_BLUE} !important; color: {BRAND_BG_SOFT} !important; border: 1px solid rgba(14,42,71,.2) !important; min-height: 2.7rem !important; font-weight: 700 !important; }}
-        .stButton > button:hover {{ filter: brightness(1.08); }}
-        @keyframes fadeIn {{ from {{ opacity:0; transform: translateY(10px); }} to {{ opacity:1; transform: translateY(0); }} }}
-        @media(max-width: 760px) {{ .yv-header {{ align-items:flex-start; flex-direction:column; }} .yv-grid {{ grid-template-columns:1fr; }} }}
+        .yv-now {{ border-left:5px solid {BRAND_GOLD}; }}
+        .yv-img img {{ border-radius:24px; }}
+        .yv-progress-wrap {{ margin:18px 0 4px; }}
+        .yv-progress-meta {{ display:flex; justify-content:space-between; gap:10px; color:rgba(250,246,239,.82); font-size:13px; margin-bottom:8px; }}
+        .yv-progress-bg {{ width:100%; height:13px; border-radius:999px; background:rgba(250,246,239,.16); overflow:hidden; border:1px solid rgba(250,246,239,.16); }}
+        .yv-progress-fill {{ height:100%; border-radius:999px; background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 18px rgba(198,169,106,.45); }}
+        .yv-progress-light .yv-progress-meta {{ color:rgba(71,55,46,.7); }}
+        .yv-progress-light .yv-progress-bg {{ background:rgba(14,42,71,.08); border-color:rgba(14,42,71,.08); }}
+        .yv-play-card {{ background:rgba(255,255,255,.52); border:1px solid rgba(14,42,71,.1); border-radius:22px; padding:16px; margin-top:12px; }}
+        .stButton > button {{ border-radius:999px !important; background:{BRAND_BLUE} !important; color:{BRAND_BG_SOFT} !important; border:1px solid rgba(14,42,71,.2) !important; min-height:2.7rem !important; font-weight:700 !important; }}
+        .stButton > button:hover {{ filter:brightness(1.08); }}
+        @keyframes fadeIn {{ from {{ opacity:0; transform:translateY(10px); }} to {{ opacity:1; transform:translateY(0); }} }}
+        @media(max-width:760px) {{ .yv-header {{ align-items:flex-start; flex-direction:column; }} .yv-grid {{ grid-template-columns:1fr; }} }}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
+def progress_html(row: Dict[str, Any], light: bool = False) -> str:
+    pct, label, detail = progress_for_row(row)
+    extra = " yv-progress-light" if light else ""
+    return f"""
+    <div class="yv-progress-wrap{extra}">
+        <div class="yv-progress-meta"><span>{label}</span><span>{pct}% · {detail}</span></div>
+        <div class="yv-progress-bg"><div class="yv-progress-fill" style="width:{pct}%;"></div></div>
+    </div>
+    """
+
+
 def render_header(view: str, session_id: str) -> None:
-    logo_html = '<div class="yv-logo-mark">Y</div>'
+    logo_path = find_logo_path()
+    logo_html = f'<img class="yv-logo-img" src="{logo_path}" />' if logo_path else '<div class="yv-logo-mark">Y</div>'
     st.markdown('<div class="yv-shell">', unsafe_allow_html=True)
     st.markdown(
         f"""
@@ -92,8 +150,6 @@ def render_header(view: str, session_id: str) -> None:
         """,
         unsafe_allow_html=True,
     )
-    if os.path.exists("assets/logo.png"):
-        st.image("assets/logo.png", width=110)
 
 
 @st.cache_resource(ttl=300)
@@ -115,10 +171,7 @@ def get_sheet():
     if "\\n" in sa.get("private_key", "") and "\n" not in sa.get("private_key", ""):
         sa["private_key"] = sa["private_key"].replace("\\n", "\n")
 
-    creds = Credentials.from_service_account_info(
-        sa,
-        scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"],
-    )
+    creds = Credentials.from_service_account_info(sa, scopes=["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"])
     return gspread.authorize(creds).open_by_key(sheet_id)
 
 
@@ -209,6 +262,19 @@ def media_block(row: Dict[str, Any]) -> None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 
+def playback_block(row: Dict[str, Any]) -> str:
+    modo = safe(row, "modo_musica", "banda") or "banda"
+    spotify = safe(row, "spotify_url")
+    label = "Banda ao vivo" if modo.lower() != "spotify" else "Playlist Spotify"
+    link = f'<br><a href="{spotify}" target="_blank">Abrir playlist ou faixa</a>' if spotify else ""
+    return f"""
+    <div class="yv-play-card">
+        <b>Modo musical:</b> {label}<br>
+        <span class="yv-muted">Use a coluna modo_musica como banda ou spotify. Para Spotify, preencha spotify_url.</span>{link}
+    </div>
+    """
+
+
 def view_cliente(session_id: str) -> None:
     df = get_timeline(session_id)
     ordem = get_live(session_id)
@@ -225,6 +291,7 @@ def view_cliente(session_id: str) -> None:
                 <div class="yv-kicker">Agora à mesa</div>
                 <div class="yv-h1">{safe(row, 'prato', 'Momento YVORA')}</div>
                 <div class="yv-white-muted">{safe(row, 'etapa')} · {safe(row, 'hora_inicio')} às {safe(row, 'hora_fim')}</div>
+                {progress_html(row)}
                 <br>
                 <div class="yv-kicker">Agora tocando</div>
                 <div class="yv-story"><b>{safe(row, 'musica', 'Música ao vivo')}</b> {('· ' + safe(row, 'artista')) if safe(row, 'artista') else ''}</div>
@@ -255,7 +322,7 @@ def view_banda(session_id: str) -> None:
     if df.empty:
         st.warning("Timeline não encontrada.")
         return
-    st.markdown('<div class="yv-card"><div class="yv-h2">Setlist e ritmo do jantar</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="yv-card"><div class="yv-h2">Setlist, playlist e ritmo do jantar</div><div class="yv-muted">A coluna modo_musica permite operar com banda ao vivo ou Spotify.</div></div>', unsafe_allow_html=True)
     for _, r in df.iterrows():
         cls = "yv-card yv-now" if int(r["ordem"]) == ordem else "yv-card"
         st.markdown(
@@ -263,9 +330,12 @@ def view_banda(session_id: str) -> None:
             <div class="{cls}">
                 <span class="yv-pill">{safe(r, 'hora_inicio')} · {safe(r, 'hora_fim')}</span>
                 <span class="yv-pill">{safe(r, 'etapa')}</span>
+                <span class="yv-pill">{safe(r, 'modo_musica', 'banda')}</span>
                 <h3 style="color:{BRAND_BLUE}; margin:14px 0 4px;">{safe(r, 'musica', 'Música ao vivo')}</h3>
                 <div class="yv-muted">{safe(r, 'artista')} · {safe(r, 'duracao_musica')}</div>
+                {progress_html(r, light=True) if int(r['ordem']) == ordem else ''}
                 <p>{safe(r, 'observacao_banda')}</p>
+                {playback_block(r)}
             </div>
             """,
             unsafe_allow_html=True,
@@ -286,6 +356,7 @@ def view_cozinha(session_id: str) -> None:
             <div class="yv-kicker">Cozinha · agora</div>
             <div class="yv-h1">{safe(row, 'prato')}</div>
             <div class="yv-story">{safe(row, 'qtd_convidados')} convidados · status: <b>{safe(row, 'status_cozinha')}</b></div>
+            {progress_html(row)}
             <br><div class="yv-white-muted">{safe(row, 'observacao_cozinha')}</div>
         </div>
         """,
@@ -321,6 +392,8 @@ def view_operacao(session_id: str) -> None:
             <div class="yv-kicker">Controle operacional</div>
             <div class="yv-h1">{safe(row, 'etapa')}</div>
             <div class="yv-story">Atual: {safe(row, 'prato')} · {safe(row, 'musica')}</div>
+            {progress_html(row)}
+            {playback_block(row)}
         </div>
         """,
         unsafe_allow_html=True,
@@ -334,7 +407,7 @@ def view_operacao(session_id: str) -> None:
     if c4.button("Ativar etapa", use_container_width=True):
         update_live(session_id, int(selected))
 
-    show_cols = ["ordem", "hora_inicio", "hora_fim", "etapa", "prato", "qtd_convidados", "status_cozinha", "status_salao", "musica", "artista", "observacao_operacao"]
+    show_cols = ["ordem", "hora_inicio", "hora_fim", "etapa", "prato", "qtd_convidados", "status_cozinha", "status_salao", "modo_musica", "musica", "artista", "spotify_url", "observacao_operacao"]
     st.dataframe(df[[c for c in show_cols if c in df.columns]], use_container_width=True, hide_index=True)
 
 
@@ -351,6 +424,6 @@ if view not in views:
 else:
     views[view](sid)
 
-st.caption("Atualização automática a cada poucos segundos. Para imagens e GIFs, use links públicos nas colunas imagem_prato e gif_momento.")
+st.caption("Atualização automática. Para Spotify, inclua as colunas modo_musica e spotify_url na timeline. Para imagens e GIFs, use links públicos em imagem_prato e gif_momento.")
 time.sleep(AUTO_REFRESH_SECONDS)
 st.rerun()
