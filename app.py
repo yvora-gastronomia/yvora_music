@@ -94,6 +94,13 @@ def inject_css(hide_sidebar: bool = False) -> None:
         .yv-muted {{ color:rgba(71,55,46,.68); font-size:14px; }}
         .yv-white-muted {{ color:rgba(250,246,239,.74); font-size:15px; line-height:1.55; }}
         .yv-story {{ font-size:clamp(18px, 2vw, 23px); line-height:1.62; color:rgba(250,246,239,.92); max-width:760px; }}
+        .yv-show-mode .yv-cinema {{ min-height: 74vh; animation: sceneBreath 10s ease-in-out infinite alternate; }}
+        .yv-show-mode .yv-cinema-content {{ padding-top: clamp(42px, 9vw, 92px); }}
+        .yv-show-mode .yv-h1 {{ font-size: clamp(46px, 8vw, 104px); }}
+        .yv-show-mode .yv-story {{ font-size: clamp(20px, 2.3vw, 28px); }}
+        .yv-service-pill {{ display:inline-flex; align-items:center; justify-content:center; padding:8px 14px; border-radius:999px; background:rgba(198,169,106,.18); color:{BRAND_GOLD}; border:1px solid rgba(198,169,106,.35); font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; }}
+        .yv-status-row {{ display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }}
+        .yv-status-card {{ background:rgba(255,255,255,.58); border:1px solid rgba(14,42,71,.1); border-radius:20px; padding:14px 16px; }}
         .yv-reveal {{ animation: revealUp .9s cubic-bezier(.2,.8,.2,1) both; }}
         .yv-delay-1 {{ animation-delay:.12s; }} .yv-delay-2 {{ animation-delay:.24s; }} .yv-delay-3 {{ animation-delay:.36s; }}
         .yv-grid {{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; margin-top:16px; }}
@@ -108,7 +115,7 @@ def inject_css(hide_sidebar: bool = False) -> None:
         .yv-play-card {{ background:rgba(255,255,255,.52); border:1px solid rgba(14,42,71,.1); border-radius:22px; padding:16px; margin-top:12px; }}
         .yv-chapter-strip {{ display:flex; gap:8px; margin:18px 0; overflow:auto; padding-bottom:4px; }} .yv-dot {{ min-width:56px; height:6px; border-radius:999px; background:rgba(14,42,71,.16); }} .yv-dot-on {{ background:linear-gradient(90deg, {BRAND_GOLD}, #E6D1A0); box-shadow:0 0 12px rgba(198,169,106,.45); }}
         .stButton > button {{ border-radius:999px !important; background:{BRAND_BLUE} !important; color:{BRAND_BG_SOFT} !important; border:1px solid rgba(14,42,71,.2) !important; min-height:2.7rem !important; font-weight:700 !important; }}
-        @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }} @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }} @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
+        @keyframes revealUp {{ from {{ opacity:0; transform:translateY(22px); filter:blur(8px); }} to {{ opacity:1; transform:translateY(0); filter:blur(0); }} }} @keyframes sceneBreath {{ from {{ transform:scale(1); }} to {{ transform:scale(1.012); }} }} @keyframes slowZoom {{ from {{ transform:scale(1.04); }} to {{ transform:scale(1.14); }} }} @keyframes floatOrb {{ from {{ transform:translateY(0); opacity:.7; }} to {{ transform:translateY(28px); opacity:1; }} }}
         @media(max-width:760px) {{ .yv-grid {{ grid-template-columns:1fr; }} .yv-cinema {{ min-height:620px; }} .yv-cinema:before {{ background:linear-gradient(180deg, rgba(6,22,38,.94), rgba(6,22,38,.72)); }} }}
         </style>
         """, unsafe_allow_html=True)
@@ -238,6 +245,11 @@ def media_url(row: Dict[str, Any]) -> str:
     return safe(row, "background_url") or safe(row, "imagem_prato") or safe(row, "gif_momento")
 
 
+def service_status(row: Dict[str, Any]) -> str:
+    status = safe(row, "status_servico") or safe(row, "status_salao") or safe(row, "status_cozinha")
+    return status.strip() or "em andamento"
+
+
 def chapter_strip(df: pd.DataFrame, ordem: int) -> str:
     dots = []
     for _, r in df.iterrows():
@@ -275,7 +287,7 @@ def view_cliente(session_id: str) -> None:
         return
     bg = media_url(row)
     bg_style = f"background-image:url('{bg}');" if bg else "background-image:radial-gradient(circle at 70% 30%, rgba(198,169,106,.26), transparent 36%);"
-    st.markdown(f"""<section class="yv-cinema"><div class="yv-cinema-bg" style="{bg_style}"></div><div class="yv-orb"></div><div class="yv-cinema-content"><div class="yv-kicker yv-reveal">Momento YVORA</div><div class="yv-h1 yv-reveal yv-delay-1">{safe(row, 'prato', 'Momento YVORA')}</div><div class="yv-kicker yv-reveal yv-delay-2">Agora tocando</div><div class="yv-story yv-reveal yv-delay-2"><b>{safe(row, 'musica', 'Música ao vivo')}</b> {('· ' + safe(row, 'artista')) if safe(row, 'artista') else ''}</div><br><div class="yv-story yv-reveal yv-delay-3">{safe(row, 'conexao_experiencia', 'A conexão entre prato e música aparece aqui.')}</div></div></section>""", unsafe_allow_html=True)
+    st.markdown(f"""<section class="yv-cinema yv-show-mode"><div class="yv-cinema-bg" style="{bg_style}"></div><div class="yv-orb"></div><div class="yv-cinema-content"><div class="yv-kicker yv-reveal">Momento YVORA</div><div class="yv-h1 yv-reveal yv-delay-1">{safe(row, 'prato', 'Momento YVORA')}</div><div class="yv-service-pill yv-reveal yv-delay-1">{service_status(row)}</div><div class="yv-kicker yv-reveal yv-delay-2">Agora tocando</div><div class="yv-story yv-reveal yv-delay-2"><b>{safe(row, 'musica', 'Música ao vivo')}</b> {('· ' + safe(row, 'artista')) if safe(row, 'artista') else ''}</div><br><div class="yv-story yv-reveal yv-delay-3">{safe(row, 'conexao_experiencia', 'A conexão entre prato e música aparece aqui.')}</div></div></section>""", unsafe_allow_html=True)
     st.markdown(f"""<div class="yv-grid"><div class="yv-mini yv-reveal"><b>Prato</b><br><span class="yv-muted">{safe(row, 'historia_prato')}</span></div><div class="yv-mini yv-reveal yv-delay-1"><b>Música</b><br><span class="yv-muted">{safe(row, 'historia_musica')}</span></div><div class="yv-mini yv-reveal yv-delay-2"><b>Experiência</b><br><span class="yv-muted">A etapa atual é revelada no ritmo da noite.</span></div></div>""", unsafe_allow_html=True)
 
 
@@ -305,6 +317,29 @@ def view_cozinha(session_id: str) -> None:
         st.markdown(f"""<div class="yv-card"><div class="yv-kicker">Próximo prato</div><div class="yv-h2">{safe(p, 'prato')}</div><div class="yv-muted">{safe(p, 'hora_inicio')} · {safe(p, 'status_cozinha')}</div><p>{safe(p, 'observacao_cozinha')}</p></div>""", unsafe_allow_html=True)
 
 
+def update_step_status(session_id: str, ordem: int, status: str) -> None:
+    ws = get_sheet().worksheet("timeline")
+    values = ws.get_all_values()
+    if not values:
+        return
+    headers = values[0]
+    if "session_id" not in headers or "ordem" not in headers:
+        return
+    if "status_servico" not in headers:
+        ws.update_cell(1, len(headers) + 1, "status_servico")
+        headers.append("status_servico")
+    idx_session = headers.index("session_id")
+    idx_ordem = headers.index("ordem")
+    idx_status = headers.index("status_servico")
+    for i, row in enumerate(values[1:], start=2):
+        sid_ok = len(row) > idx_session and str(row[idx_session]).strip() == str(session_id).strip()
+        ordem_ok = len(row) > idx_ordem and str(row[idx_ordem]).strip() == str(ordem).strip()
+        if sid_ok and ordem_ok:
+            ws.update_cell(i, idx_status + 1, status)
+            read_df.clear()
+            st.rerun()
+
+
 def view_operacao(session_id: str) -> None:
     df = get_timeline(session_id)
     ordem = get_live(session_id)
@@ -323,7 +358,15 @@ def view_operacao(session_id: str) -> None:
     selected = c3.selectbox("Ir para", df["ordem"].tolist(), index=max(0, df["ordem"].tolist().index(ordem)))
     if c4.button("Ativar etapa", use_container_width=True):
         update_live(session_id, int(selected))
-    show_cols = ["ordem", "hora_inicio", "hora_fim", "etapa", "prato", "qtd_convidados", "status_cozinha", "status_salao", "modo_musica", "musica", "artista", "spotify_url", "observacao_operacao"]
+    st.markdown('<div class="yv-card"><div class="yv-h2">Status de serviço</div><div class="yv-muted">Use estes estados para coordenar cozinha, salão e música sem depender do relógio.</div></div>', unsafe_allow_html=True)
+    s1, s2, s3 = st.columns(3)
+    if s1.button("Preparando", use_container_width=True):
+        update_step_status(session_id, ordem, "preparando")
+    if s2.button("Pronto", use_container_width=True):
+        update_step_status(session_id, ordem, "pronto")
+    if s3.button("Servido", use_container_width=True):
+        update_step_status(session_id, ordem, "servido")
+    show_cols = ["ordem", "hora_inicio", "hora_fim", "etapa", "prato", "qtd_convidados", "status_servico", "status_cozinha", "status_salao", "modo_musica", "musica", "artista", "spotify_url", "observacao_operacao"]
     st.dataframe(df[[c for c in show_cols if c in df.columns]], use_container_width=True, hide_index=True)
 
 
